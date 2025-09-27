@@ -12,7 +12,7 @@ class SellerSerializer(serializers.ModelSerializer):
 class PhoneNumberSerializer(serializers.ModelSerializer):
     class Meta:
         model = PhoneNumber
-        fields = ["id", "number", "created_at"]
+        fields = ["id", "name", "number", "created_at"]
 
 
 class TransactionSerializer(serializers.ModelSerializer):
@@ -36,7 +36,7 @@ class TransactionSerializer(serializers.ModelSerializer):
 
 class TopUpRequestSerializer(serializers.ModelSerializer):
     seller = serializers.PrimaryKeyRelatedField(queryset=Seller.objects.all())
-    idempotency_key = serializers.CharField(required=False)  # ← اینجا تغییر
+    idempotency_key = serializers.CharField(required=False)
 
     class Meta:
         model = TopUpRequest
@@ -55,7 +55,7 @@ class TopUpRequestSerializer(serializers.ModelSerializer):
 
 
 class SellChargeSerializer(serializers.Serializer):
-    """برای endpoint فروش شارژ"""
+    """For the charging sales endpoint"""
 
     seller_id = serializers.IntegerField()
     phone_number = serializers.CharField()

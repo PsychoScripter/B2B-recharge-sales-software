@@ -37,9 +37,10 @@ class Seller(models.Model):
 
 
 class PhoneNumber(models.Model):
+    name = models.CharField(max_length=200)
     number = models.CharField(max_length=32, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    last_charged_at = models.DateTimeField(null=True, blank=True)  # 👈 اضافه شد
+    last_charged_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.number
@@ -47,7 +48,7 @@ class PhoneNumber(models.Model):
 
 class Transaction(models.Model):
     TOPUP = "TOPUP"
-    SALE = "SALE"   # 👈 استفاده برای فروش شارژ
+    SALE = "SALE"
     ADJUST = "ADJUST"
     TX_TYPES = [(TOPUP, "Topup"), (SALE, "Sale"), (ADJUST, "Adjust")]
 
@@ -56,7 +57,7 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=18, decimal_places=0)
     balance_after = models.DecimalField(max_digits=18, decimal_places=0)
     phone = models.ForeignKey(PhoneNumber, null=True, blank=True, on_delete=models.SET_NULL)
-    reference = models.CharField(max_length=255, null=True, blank=True)
+    reference = models.CharField(max_length=255, null=True, blank=True, unique=True)
     metadata = JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -81,7 +82,7 @@ class TopUpRequest(models.Model):
         return f"TopUpRequest({self.pk}) seller={self.seller_id} amount={self.amount} applied={bool(self.applied_at)}"
 
     def save(self, *args, **kwargs):
-        if not self.idempotency_key:  # اگر دستی ست نشده باشه
+        if not self.idempotency_key:
             self.idempotency_key = str(uuid.uuid4())
         super().save(*args, **kwargs)
 
@@ -99,8 +100,9 @@ class TopUpRequest(models.Model):
         """Apply top-up requests atomically and safely."""
         with transaction.atomic():
             # Lock request and seller
-            tr = TopUpRequest.objects.select_for_update().select_related("seller").get(pk=self.pk)
-            seller = tr.seller
+            tr = TopUpRequest.objects.select_for_update().get(pk=self.pk)
+            # lock seller row explicitly
+            seller = Seller.objects.select_for_update().get(pk=tr.seller_id)
 
             if tr.applied_at:
                 raise TopUpAlreadyAppliedError("TopUp already applied")

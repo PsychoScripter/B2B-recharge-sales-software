@@ -10,6 +10,8 @@ services:
       POSTGRES_DB: tabdeal_db
     ports:
       - "5432:5432"
+    volumes:
+        - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tabdeal_user -d tabdeal_db"]
       interval: 5s
@@ -54,3 +56,5 @@ services:
         condition: service_healthy
       django:
         condition: service_started
+volumes:
+  postgres_data:
